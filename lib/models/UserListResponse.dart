@@ -42,6 +42,39 @@ class UserListResponse {
 
 }
 
+class UserResponse {
+  UserResponse({
+      String? message,
+      String? status,
+      Users? user,}){
+    _message = message;
+    _status = status;
+    _user = user;
+}
+
+  UserResponse.fromJson(dynamic json) {
+    _message = json['message'];
+    _status = json['status'];
+    _user = json['user']!=null ? Users.fromJson(json['user']) : Users();
+  }
+  String? _message;
+  String? _status;
+  Users? _user;
+
+  String? get message => _message;
+  String? get status => _status;
+  Users? get user => _user;
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    map['message'] = _message;
+    map['status'] = _status;
+    map['user'] = _user?.toJson();
+    return map;
+  }
+
+}
+
 /// ID : "922"
 /// MEMBERID : "422"
 /// NAME : " CHIRAG  DHARAMPAL"

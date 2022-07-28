@@ -1,12 +1,18 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:sonipat_samaj/Filter.dart';
+import 'package:sonipat_samaj/Trustee.dart';
+import 'package:sonipat_samaj/Events.dart';
+import 'package:sonipat_samaj/Notifications.dart';
+import 'package:sonipat_samaj/UserDetails.dart';
 import 'package:sonipat_samaj/api/APIConstant.dart';
 import 'package:sonipat_samaj/api/APIService.dart';
 import 'package:sonipat_samaj/api/Environment.dart';
 import 'package:sonipat_samaj/colors/MyColors.dart';
 import 'package:sonipat_samaj/models/BannerListResponse.dart';
 import 'package:sonipat_samaj/models/UserListResponse.dart';
-import 'package:transparent_image/transparent_image.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -22,6 +28,11 @@ class _DashboardState extends State<Dashboard> {
   List<Banners> rbanners = [];
   List<Banners> nrbanners = [];
   List<Users> users = [];
+  static const _pageSize = 20;
+
+  late PagingController<int, Users> _pagingController =
+  PagingController(firstPageKey: 0);
+
   bool load = false;
 
   GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
@@ -34,66 +45,177 @@ class _DashboardState extends State<Dashboard> {
   List<Widget> slider = [];
   List<Widget> slidenr = [];
 
+  TextEditingController name = new TextEditingController();
+
+  late bool mmarried, mumarried, cmarried, cumarried;
+  late bool mrj, mnrj, crj, cnrj;
+  late bool m1, m2, m3, m4, m5, m6, c1, c2, c3, c4, c5, c6;
+
+  List<String> mp = [];
+  List<String> cp = [];
+
+  String filter = "";
+
+  APIService apiService = APIService();
   @override
   void initState() {
+    apiService.init();
+    _pagingController.addPageRequestListener((pageKey) {
+      getUsers(pageKey);
+    });
     start();
     super.initState();
   }
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Scaffold(
+      child: load ? Scaffold(
         appBar: AppBar(
+          title: TextFormField(
+            onChanged: (value) {
+              print("change");
+            //   _pagingController.dispose();
+            //   _pagingController =  PagingController(firstPageKey: 0);
+            //   if(name.text.isNotEmpty) {
+            //     _pagingController.addPageRequestListener((pageKey) {
+            //       getSearchUsers(pageKey);
+            //     });
+            //     getSearchUsers(0);
+            //   }
+            //   else {
+            //     _pagingController.addPageRequestListener((pageKey) {
+            //       getUsers(pageKey);
+            //     });
+            //     getUsers(0);
+            //   }
+            },
+            onFieldSubmitted: (value) {
+              print("submit");
+              _pagingController.dispose();
+              _pagingController =  PagingController(firstPageKey: 0);
+              _pagingController.addPageRequestListener((pageKey) {
+                    getSearchUsers(pageKey);
+                  });
+              getSearchUsers(0);
+            },
+            onEditingComplete: () {
+              print("complete");
+
+            },
+            onSaved: (value) {
+              print("saved");
+
+            },
+            controller: name,
+            style: TextStyle(color: MyColors.black),
+            decoration: InputDecoration(
+              hintText: "Search Member",
+            ),
+            cursorColor: MyColors.black,
+            keyboardType: TextInputType.name,
+          ),
           actions: [
             IconButton(
               icon: Icon(
                 Icons.filter_alt_outlined
               ),
               onPressed: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => Filter(
+                  mmarried: mmarried, cmarried: cmarried, mumarried: mumarried, cumarried: cumarried,
+                  mrj: mrj, mnrj: mnrj, crj: crj, cnrj: cnrj,
+                  m1: m1, m2: m2, m3: m3, m4: m4, m5: m5, m6: m6,
+                  c1: c1, c2: c2, c3: c3, c4: c4, c5: c5, c6: c6,
+                  mp: mp, cp: cp
+                ))).then((value) {
+                      if(value!=null) {
+                        load = false;
+                        mmarried = value["mmarried"];
+                        cmarried = value["cmarried"];
+                        mumarried = value["mumarried"];
+                        cumarried = value["cumarried"];
+                        mrj = value["mrj"];
+                        mnrj = value["mnrj"];
+                        crj = value["crj"];
+                        cnrj = value["cnrj"];
+                        m1 = value["m1"];
+                        m2 = value["m2"];
+                        m3 = value["m3"];
+                        m4 = value["m4"];
+                        m5 = value["m5"];
+                        m6 = value["m6"];
+                        c1 = value["c1"];
+                        c2 = value["c2"];
+                        c3 = value["c3"];
+                        c4 = value["c4"];
+                        c5 = value["c5"];
+                        c6 = value["c6"];
+                        mp = value["mp"];
+                        cp = value["cp"];
+                        filter = value['query'];
+                        setState(() {
+
+                        });
+                        _pagingController.dispose();
+                        _pagingController =  PagingController(firstPageKey: 0);
+                        _pagingController.addPageRequestListener((pageKey) {
+                          getFilterUsers(pageKey);
+                        });
+                        getFilterUsers(0);
+                      }
+                });
               },
             )
           ],
         ),
-        // bottomNavigationBar: CarouselSlider(
-        //   items: slider,
-        //   carouselController: rcontroller,
-        //   options: CarouselOptions(
-        //       enlargeCenterPage: true,
-        //       height: 70,
-        //       viewportFraction: 1,
-        //       initialPage: 0,
-        //       autoPlay: true,
-        //       autoPlayInterval: Duration(seconds: 3),
-        //       onPageChanged: (index, reason) {
-        //         setState(() {
-        //           rcurrent = index;
-        //         });
-        //       }),
-        // ),
+        bottomNavigationBar: CarouselSlider(
+          items: slider,
+          carouselController: rcontroller,
+          options: CarouselOptions(
+              enlargeCenterPage: true,
+              height: 70,
+              viewportFraction: 1,
+              initialPage: 0,
+              autoPlay: true,
+              autoPlayInterval: Duration(seconds: 3),
+              onPageChanged: (index, reason) {
+                setState(() {
+                  rcurrent = index;
+                });
+              }),
+        ),
         drawer: Drawer(
           child: Column(
             children: <Widget>[
               Container(
                 width: MediaQuery.of(context).size.width,
-                padding: EdgeInsets.only(top: 30),
+                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                color: MyColors.colorPrimary,
                 height: 160,
-                child: Container(
-                  alignment: Alignment.bottomLeft,
-                  padding: EdgeInsets.only(left: 8),
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(
-                            "assets/images/app_icon.jpg"
-                        ),
-                      )
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      radius: 40,
+                      child: ClipOval(
+                          child: Image.asset(
+                            "assets/app_icon.jpg",
+                          )
+                      ),
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      "Sonipat Samaaj Seva Samiti Surat",
+                      style: TextStyle(
+                        color: MyColors.white,
+                        fontWeight: FontWeight.w500
+                      ),
+                    )
+                  ],
                 ),
-              ),
-              Divider(
-                thickness: 1,
-              ),
-              SizedBox(
-                height: 10,
               ),
               GestureDetector(
                 onTap: () {
@@ -114,9 +236,9 @@ class _DashboardState extends State<Dashboard> {
                   // setState(() {
                   //   _currentIndex = 1;
                   // });
-                  closeDrawer();
-                  // Navigator.push(
-                  //     context, MaterialPageRoute(builder: (context) => TrusteeScreen()));
+                  // closeDrawer();
+                  Navigator.push(
+                      context, MaterialPageRoute(builder: (context) => Trustee()));
                 },
                 child: ListTile(
                   textColor: _currentIndex==1 ? MyColors.colorPrimary : Colors.black,
@@ -125,153 +247,197 @@ class _DashboardState extends State<Dashboard> {
                   title: Text('Trustee'),
                 ),
               ),
-            ],
-          ),
-        ),
-        body: load ? SingleChildScrollView(
-          child: Column(
-            children: [
-              // CarouselSlider(
-              //   items: slidenr,
-              //   carouselController: nrcontroller,
-              //   options: CarouselOptions(
-              //       enlargeCenterPage: true,
-              //       height: 200,
-              //       viewportFraction: 1,
-              //       initialPage: 0,
-              //       autoPlay: true,
-              //       autoPlayInterval: Duration(seconds: 3),
-              //       onPageChanged: (index, reason) {
-              //         setState(() {
-              //           nrcurrent = index;
-              //         });
-              //       }),
-              // ),
-              ListView.separated(
-                itemCount: users.length,
-                scrollDirection: Axis.vertical,
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                separatorBuilder: (BuildContext buildContext, index) {
-                  return SizedBox(height: 10);
+              GestureDetector(
+                onTap: () {
+                  // setState(() {
+                  //   _currentIndex = 1;
+                  // });
+                  // closeDrawer();
+                  Navigator.push(
+                      context, MaterialPageRoute(builder: (context) => Events()));
                 },
-                itemBuilder: (BuildContext buildContext, index) {
-                  return getUserDesign(users[index]);
+                child: ListTile(
+                  textColor: _currentIndex==2 ? MyColors.colorPrimary : Colors.black,
+                  iconColor: _currentIndex==2 ? MyColors.colorPrimary : Colors.grey,
+                  leading: Icon(Icons.event),
+                  title: Text('Events'),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // setState(() {
+                  //   _currentIndex = 1;
+                  // });
+                  // closeDrawer();
+                  Navigator.push(
+                      context, MaterialPageRoute(builder: (context) => Notifications()));
                 },
+                child: ListTile(
+                  textColor: _currentIndex==3 ? MyColors.colorPrimary : Colors.black,
+                  iconColor: _currentIndex==3 ? MyColors.colorPrimary : Colors.grey,
+                  leading: Icon(Icons.notifications_none),
+                  title: Text('Notifications'),
+                ),
               ),
             ],
           ),
-        ) :
-        Center(
-          child: CircularProgressIndicator(),
         ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              CarouselSlider(
+                items: slidenr,
+                carouselController: nrcontroller,
+                options: CarouselOptions(
+                    enlargeCenterPage: true,
+                    height: 200,
+                    viewportFraction: 1,
+                    initialPage: 0,
+                    autoPlay: true,
+                    autoPlayInterval: Duration(seconds: 3),
+                    onPageChanged: (index, reason) {
+                      setState(() {
+                        nrcurrent = index;
+                      });
+                    }),
+              ),
+              PagedListView<int, Users>.separated(
+                pagingController: _pagingController,
+                shrinkWrap: true,
+                scrollDirection: Axis.vertical,
+                physics: NeverScrollableScrollPhysics(),
+                builderDelegate: PagedChildBuilderDelegate<Users>(
+                  itemBuilder: (context, item, index)
+                  {
+                    return getUserDesign(item);
+                  },
+                ),
+                separatorBuilder: (BuildContext buildContext, index) {
+                  return SizedBox(height: 10);
+                },
+              )
+              // ListView.separated(
+              //   itemCount: users.length,
+              //   scrollDirection: Axis.vertical,
+              //   shrinkWrap: true,
+              //   physics: NeverScrollableScrollPhysics(),
+              //   separatorBuilder: (BuildContext buildContext, index) {
+              //     return SizedBox(height: 10);
+              //   },
+              //   itemBuilder: (BuildContext buildContext, index) {
+              //     return getUserDesign(users[index]);
+              //   },
+              // ),
+            ],
+          ),
+        )
+      )
+      : Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }
 
   void start() {
-    getUsers();
-    // getRBanners();
+    mmarried = mumarried = cmarried = cumarried = false;
+    mrj = mnrj = crj = cnrj = false;
+    m1 = m2 = m3 = m4 = m5 = m6 = c1 = c2 = c3 = c4 = c5 = c6 = false;
+
+    getRBanners();
   }
 
   Widget getUserDesign(Users user) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-      margin: EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: MyColors.white,
-        borderRadius: BorderRadius.all(Radius.circular(3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.grey,
-            offset: Offset(0.0, 1.0), //(x,y)
-            blurRadius: 1.0,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-              backgroundColor: Colors.transparent,
-              radius: 40,
-              // child: ClipOval(
-              //   child: Image.network(
-              //     Environment.imageUrl + (user.image??"")
-              //   )
-              // ),
-            child: ClipOval(
-              child: FadeInImage.memoryNetwork(
-                  placeholder: kTransparentImage,
-                  image: Environment.imageUrl + (user.image??""),
-                  imageErrorBuilder: (context, error, stacktrace) { // Handle Error for the 1st time
-                    return FadeInImage.memoryNetwork(
-                      placeholder: kTransparentImage,
-                      image: Environment.imageUrl + (user.image??""),
-                      imageErrorBuilder: (context, error,
-                          stacktrace) { // Handle Error for the 2nd time
-                        return FadeInImage.memoryNetwork(
-                          fit: BoxFit.cover,
-                          placeholder: kTransparentImage,
-                          image: Environment.imageUrl + (user.image??""),
-                          imageErrorBuilder: (context, error,
-                              stacktrace) { // Handle Error for the 3rd time to return text
-                            return Center(child: Text('Image Not Available'));
-                          },
-                        );
-                      },
-                    );
-                  }
-               ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+            MaterialPageRoute(
+                builder: (BuildContext context) =>  UserDetails(id: user.id??"")
+            )
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+        margin: EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: MyColors.white,
+          borderRadius: BorderRadius.all(Radius.circular(3)),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.grey,
+              offset: Offset(0.0, 1.0), //(x,y)
+              blurRadius: 1.0,
             ),
-          ),
-          SizedBox(
-            width: 10,
-          ),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  (user.name??"").trim(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                RichText(
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    text: user.mobile1??"",
-                    style: TextStyle(
-                      color: MyColors.black,
-                      fontWeight: FontWeight.w500
-                    ),
-                    children: [
-                      if((user.mobile2??"").isNotEmpty)
-                        TextSpan(
-                          text: " ,"+(user.mobile2??"")
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+                backgroundColor: Colors.transparent,
+                radius: 40,
+                child: ClipOval(
+                  child: Image.network(
+                    Environment.imageUrl + (user.image??""),
+                    errorBuilder: (BuildContext buildContext, objrct, stacktrace) {
+                      return ClipOval(
+                        child: Icon(
+                          Icons.account_circle,
+                          size: 70,
                         ),
-                      if((user.mobile3??"").isNotEmpty)
-                        TextSpan(
-                          text: " ,"+(user.mobile3??"")
-                        )
-                    ]
-                  ),
+                      );
+                    },
+                  )
                 ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  (user.resadd1??"").trim(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
             ),
-          ),
-        ],
+            SizedBox(
+              width: 10,
+            ),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    (user.name??"").trim()+" "+(user.surname??"").trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  RichText(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      text: user.mobile1??"",
+                      style: TextStyle(
+                        color: MyColors.black,
+                        fontWeight: FontWeight.w500
+                      ),
+                      children: [
+                        if((user.mobile2??"").isNotEmpty)
+                          TextSpan(
+                            text: " ,"+(user.mobile2??"")
+                          ),
+                        if((user.mobile3??"").isNotEmpty)
+                          TextSpan(
+                            text: " ,"+(user.mobile3??"")
+                          )
+                      ]
+                    ),
+                  ),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  Text(
+                    (user.resadd1??"").trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -285,7 +451,7 @@ class _DashboardState extends State<Dashboard> {
     Map<String, dynamic> queryParameters = new Map();
     queryParameters[APIConstant.act] = APIConstant.getR;
 
-    BannerListResponse bannerListResponse = await APIService().getBanners(queryParameters);
+    BannerListResponse bannerListResponse = await apiService.getBanners(queryParameters);
     if(bannerListResponse.status=="Success" && bannerListResponse.message=="Banners Retrieved") {
       rbanners = bannerListResponse.banners ?? [];
     }
@@ -297,7 +463,7 @@ class _DashboardState extends State<Dashboard> {
     Map<String, dynamic> queryParameters = new Map();
     queryParameters[APIConstant.act] = APIConstant.getNR;
 
-    BannerListResponse bannerListResponse = await APIService().getBanners(queryParameters);
+    BannerListResponse bannerListResponse = await apiService.getBanners(queryParameters);
     if(bannerListResponse.status=="Success" && bannerListResponse.message=="Banners Retrieved") {
       nrbanners = bannerListResponse.banners ?? [];
     }
@@ -320,7 +486,6 @@ class _DashboardState extends State<Dashboard> {
                 width: MediaQuery.of(context).size.width),
           )
       );
-      i++;
     }
 
     setNRBanner();
@@ -338,34 +503,125 @@ class _DashboardState extends State<Dashboard> {
                 width: MediaQuery.of(context).size.width),
           )
       );
-      i++;
     }
 
-    getUsers();
+    getUsers(0);
   }
 
-  Future<void> getUsers() async {
-    Map<String, dynamic> queryParameters = new Map();
-    queryParameters[APIConstant.act] = APIConstant.getAll;
-    queryParameters[APIConstant.offset] = users.length;
-    print(users.length);
-    print(queryParameters);
+  Future<void> getUsers(int pageKey) async {
+    try {
+      Map<String, dynamic> queryParameters = new Map();
+      queryParameters[APIConstant.act] = APIConstant.getAll;
+      queryParameters[APIConstant.offset] = (_pagingController.itemList?.length ?? 1) - 1;
+      // print(queryParameters);
 
-    UserListResponse userListResponse = await APIService().getUsers(queryParameters);
-    print(userListResponse.toJson());
-    if(userListResponse.status=="Success" && userListResponse.message=="Users Retrieved") {
-      users.addAll(userListResponse.users ?? []);
+      UserListResponse userListResponse = await apiService.getUsers(
+          queryParameters);
+
+      if (userListResponse.status == "Success" && userListResponse.message == "Users Retrieved") {
+        final isLastPage = userListResponse.users!.length < _pageSize;
+        if (isLastPage) {
+          _pagingController.appendLastPage(userListResponse.users ?? []);
+        } else {
+          final nextPageKey = pageKey + userListResponse.users!.length;
+          _pagingController.appendPage(userListResponse.users ?? [], nextPageKey);
+        }
+        if(_pagingController.itemList!.length <=_pageSize) {
+          load = true;
+
+          setState(() {
+
+          });
+        }
+        // users = userListResponse.users ?? [];
+      }
+    } catch (error) {
+      _pagingController.error = error;
     }
 
-    if(!load) {
-      load = true;
+
+
+    // setState(() {
+    //
+    // });
+  }
+
+  Future<void> getSearchUsers(int pageKey) async {
+    try {
+      Map<String, dynamic> queryParameters = new Map();
+      queryParameters[APIConstant.act] = APIConstant.getByName;
+      queryParameters["search"] = name.text;
+      queryParameters[APIConstant.offset] = (_pagingController.itemList?.length ?? 1) - 1;
+
+      UserListResponse userListResponse = await apiService.getUsers(
+          queryParameters);
+
+      if (userListResponse.status == "Success" && userListResponse.message == "Users Retrieved") {
+        final isLastPage = userListResponse.users!.length < _pageSize;
+        if (isLastPage) {
+          _pagingController.appendLastPage(userListResponse.users ?? []);
+        } else {
+          final nextPageKey = pageKey + userListResponse.users!.length;
+          _pagingController.appendPage(userListResponse.users ?? [], nextPageKey);
+        }
+        if(_pagingController.itemList!.length <=_pageSize) {
+          load = true;
+
+
+          setState(() {
+
+          });
+        }
+        // users = userListResponse.users ?? [];
+      }
+    } catch (error) {
+      _pagingController.error = error;
     }
+
+
+    // load = true;
+
+    setState(() {
+
+    });
+  }
+
+  Future<void> getFilterUsers(int pageKey) async {
+    try {
+      Map<String, dynamic> queryParameters = new Map();
+      queryParameters[APIConstant.act] = APIConstant.getByFilter;
+      queryParameters["filter"] = filter;
+      queryParameters[APIConstant.offset] = (_pagingController.itemList?.length ?? 1) - 1;
+
+      UserListResponse userListResponse = await apiService.getUsers(
+          queryParameters);
+
+      if (userListResponse.status == "Success" && userListResponse.message == "Users Retrieved") {
+        final isLastPage = userListResponse.users!.length < _pageSize;
+        if (isLastPage) {
+          _pagingController.appendLastPage(userListResponse.users ?? []);
+        } else {
+          final nextPageKey = pageKey + userListResponse.users!.length;
+          _pagingController.appendPage(userListResponse.users ?? [], nextPageKey);
+        }
+        if(_pagingController.itemList!.length <=_pageSize) {
+          load = true;
+
+
+          setState(() {
+
+          });
+        }
+        // users = userListResponse.users ?? [];
+      }
+    } catch (error) {
+      _pagingController.error = error;
+    }
+
 
     setState(() {
 
     });
 
-    if(userListResponse.users!.isNotEmpty)
-      getUsers();
   }
 }

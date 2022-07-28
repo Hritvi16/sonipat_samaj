@@ -12,7 +12,12 @@ class APIConstant {
   static String sendNSE = Environment.url + Environment.api + "sendNSE.php";
   static String login = Environment.url + Environment.api + "login.php";
   static String signUp = Environment.url + Environment.api + "signUp.php";
-  static String manageUser = Environment.url + Environment.api + "manage-user.php";
+  static String manageUser = Environment.api + "manage-user.php";
+  // static String manageUser = Environment.url + Environment.api + "manage-user.php";
+  static String manageChild = Environment.url + Environment.api + "manage-child.php";
+  static String getProfessions = Environment.url + Environment.api + "getProfessions.php";
+  static String getEvents = Environment.api + "getEvents.php";
+  static String getNotifications = Environment.api + "getNotifications.php";
   static String manageBanner = Environment.url + Environment.api + "manage-banner.php";
   static String manageDashboard = Environment.url + Environment.api + "getDashboard.php";
   static String manageCities = Environment.url + Environment.api + "manage-cities.php";
@@ -48,11 +53,13 @@ class APIConstant {
   static String getByID = "FETCHBYID";
   static String getByBID = "FETCHBYBID";
   static String getByName = "FETCHBYNAME";
+  static String getByFilter = "FETCHBYFILTER";
   static String getPopular = "FETCHPOPULAR";
   static String getByTime = "FETCHBYTIME";
   static String getByHotel = "FETCHBYHOTEL";
   static String getByCategory = "FETCHBYCATEGORY";
   static String getAll = "FETCHALL";
+  static String getTrustee = "FETCHTRUSTEE";
   static String getR = "FETCHR";
   static String getNR = "FETCHNR";
 

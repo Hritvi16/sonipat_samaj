@@ -37,10 +37,20 @@ dependencies:
   dio: ^4.0.6
   carousel_slider: ^4.1.1
   transparent_image: ^2.0.0
+  url_launcher: ^6.1.5
+  flutter_launcher_icons: ^0.9.3
+  flutter_html: ^2.2.1
+  html_unescape: ^2.0.0
+  firebase_core: ^1.17.0
+  firebase_auth: ^3.3.18
+  firebase_messaging: ^11.4.0
+  flutter_local_notifications: ^9.5.3+1
+  infinite_scroll_pagination: ^3.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  url_launcher: ^6.1.5
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -53,6 +63,11 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/app_icon.jpg"
+
 flutter:
 
   # The following line ensures that the Material Icons font is
@@ -61,8 +76,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/temple.png
+    - assets/app_icon.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
